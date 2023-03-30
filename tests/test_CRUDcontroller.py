@@ -1,6 +1,6 @@
 from openpyxl import Workbook
 import pytest
-from CRUDcontroller import *
+import CRUDcontroller
 
 
 
@@ -11,7 +11,7 @@ class test_CRUDcontroller:
         mocksheet = mockbook["testing"]
         for i in range(1, 6):
             mocksheet.append([f"{chr(65+j)}{i}" for j in range(3)])
-        self.controller = CRUDcontroller(mocksheet)
+        self.controller = CRUDcontroller.CRUDcontroller(mocksheet)
     def test_find(self):
         row = self.controller.find("A3")
         assert row == 3
