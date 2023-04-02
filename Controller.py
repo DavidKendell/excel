@@ -1,9 +1,11 @@
 from openpyxl.worksheet.worksheet import Worksheet
-class CRUDcontroller:
+class Controller:
     def __init__(self, data: Worksheet) -> None:
         self.data = data
-    def find(self, findId) -> int:
-        for x in self.data["A"]:
+    def find(self, findId, data = None) -> int:
+        if data == None:
+            data = self.data
+        for x in data["A"]:
             if x.value == findId:
                 return x.row
         return 0

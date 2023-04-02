@@ -1,55 +1,27 @@
 from openpyxl import Workbook
-from src.CRUDcontroller import *
+from Controller import *
 from openpyxl import load_workbook
+from utility import *
 import os
 
 
-def init() -> None:
-    workbook = Workbook()
-    sheet = workbook.active
-    sheet.title = "MappingTraineeId"
-    sheet["A1"] = "CourseId"
-    sheet["B1"] = "TraineeId"
-    workbook.create_sheet("Trainees")
-    sheet = workbook["Trainees"]
-    sheet["A1"], sheet["B1"] = "id", "Name"
-    sheet["C1"], sheet["D1"], sheet["E1"] = "Course", "Background/degree", "WorkExperience"
-    workbook.create_sheet("CourseDetails")
-    sheet = workbook["CourseDetails"]
-    sheet["A1"], sheet["B1"] = "CourseId", "Description"
-    workbook.create_sheet("Trainers")
-    sheet = workbook["Trainers"]
-    sheet["A1"], sheet["B1"] = "id", "name"
-    sheet["C1"], sheet["D1"] = "email", "phone number"
-    workbook.create_sheet("MappingCourseTrainer")
-    sheet = workbook["MappingCourseTrainer"]
-    sheet["A1"], sheet["B1"] = "Trainerid" , "CourseId"
-    workbook.create_sheet("Managers")
-    sheet = workbook["Managers"]
-    sheet["A1"], sheet["B1"] = "id", "name"
-    sheet["C1"], sheet["D1"] = "email", "phone number"
-    workbook.save(filename="course_manager.xlsx")
 
-def setAttendance(sheet: Worksheet, absent: list):
-    print(sheet["A1"])
-    for row in sheet.rows:
-        if row[0].value in absent:
-            row[2].value = "A"
 if not os.path.isfile("course_manager.xlsx"):
     init()
 workbook = load_workbook(filename="course_manager.xlsx")
 sheet = workbook["Trainees"]
-print(sheet["A1"].row)
 choice = None
-controller = CRUDcontroller(sheet)
+date = None
+controller = Controller(sheet)
 while choice != "q":
     choice = input("""
     1 Show sheets
     2 Set active sheet
     3 Create entry
-    4 Update entry
-    5 Delete entry
-    6 Add session
+    4 Read entry
+    5 Update entry
+    6 Delete entry
+    7 Add session
     q Quit
     """)
     match(choice):
@@ -57,8 +29,11 @@ while choice != "q":
             print(", ".join(workbook.sheetnames))
         case "2":
             try:
-                sheet = input("Enter name of sheet ")
-                sheet = workbook[sheet]
+                sheetname = input("Enter name of sheet ")
+                if sheetname.find("Map") != -1:
+                    print("Map sheets are auto-generated")
+                    continue
+                sheet = workbook[sheetname]
                 controller.data = sheet
             except KeyError:
                 print("No such sheet")
@@ -68,28 +43,62 @@ while choice != "q":
             if controller.find(newId) != 0:
                 print("id must be unique")
                 continue
-            controller.add(newId, [input(f"Enter the new value for {cell.value} ") for cell in sheet[1][1:]])
+            controller.add(newId, [input(f"Enter the value for {cell.value} ") for cell in sheet[1][1:]])
         case "4":
+            row = controller.find(input("Enter the id "))
+            if not row:
+                print("Not found ")
+                continue
+            sizes = [len(cell.value) for cell in sheet[1] + sheet[row]]
+            width = max(sizes)
+            print("|".join([f"{cell.value:^{width}}" for cell in sheet[1]]))
+            print("-"*(len(sheet[1])*(width+1)-1))
+            print("|".join([f"{cell.value:^{width}}" for cell in sheet[row]]))
+        case "5":
             row = controller.find(input("Enter the id "))
             if not row:
                 print("id not found")
                 continue
-            controller.update(row, [input(f"Enter the new value for {cell.value} ") for cell in sheet[1][1:]])
-        case "5":
-            controller.delete(input("Enter the id "))
+            sizes = [len(cell.value) for cell in sheet[1] + sheet[row]]
+            width = max(sizes)
+            print("|".join([f"{cell.value:^{width}}" for cell in sheet[1]]))
+            print("-"*(len(sheet[1])*(width+1)-1))
+            print("|".join([f"{cell.value:^{width}}" for cell in sheet[row]]))
+            controller.update(row, [input(f"Enter the new value for {cell.value}. Enter blank string to skip ") for cell in sheet[1][1:]])
+            print("|".join([f"{cell.value:^{width}}" for cell in sheet[1]]))
+            print("-"*(len(sheet[1])*(width+1)-1))
+            print("|".join([f"{cell.value:^{width}}" for cell in sheet[row]]))
         case "6":
+            controller.delete(input("Enter the id "))
+        case "7":
             date = input("Enter date ")
-            workbook.create_sheet(date)
-            attendance = workbook[date]
+            courseId = input("Enter course id")
+            workbook.create_sheet(date + " " + courseId)
+            attendance = workbook[date + " " + courseId]
             attendance["A1"], attendance["B1"], attendance["C1"] = "id", "name", "present/absent"
             trainees = workbook["Trainees"]
             rows = trainees.rows
             next(rows)
             for row in rows:
-                attendance.append([row[0].value, row[1].value, "P"])
+                if row[1].value == courseId:
+                    attendance.append([row[0].value, row[2].value, "P"])
             setAttendance(attendance, [input("Enter id of absent trainee ") for i in range(int(input("Enter number of absent students ")))])
 
             
         case "q":
             break
+email = sendEmail(workbook ,date + " " + "c343")
+print(f"{email} has been notified about c343 session dated {date}")
+print("Joining Trainees with CourseDetails")
+print("Select Trainees columns to display")
+A = selectColumns(workbook["Trainees"])
+print("Select CourseDetails columns to display")
+B = selectColumns(workbook["CourseDetails"])
+join(workbook["Trainees"], workbook["CourseDetails"], A, B, workbook, "TraineeCourseMap")
+print("Joining Trainers with CourseDetails")
+print("Select Trainers columns to display")
+A = selectColumns(workbook["Trainers"])
+print("Select CourseDetails columns to display")
+B = selectColumns(workbook["CourseDetails"])
+join(workbook["CourseDetails"], workbook["Trainers"], B, A, workbook, "TrainerCourseMap")
 workbook.save(filename="course_manager.xlsx")
