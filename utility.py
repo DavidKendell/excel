@@ -57,10 +57,10 @@ def sendEmail(workbook: Workbook, title: str):
         if courseId == cell.value:
             trainerId = workbook["CourseDetails"][f"B{cell.row}"]
     for cell in workbook["Trainers"]["A"]:
-        if trainerId == cell.value:
+        if trainerId.value == cell.value:
             managerId = workbook["Trainers"][f"B{cell.row}"]
     for cell in workbook["Managers"]["A"]:
-        if managerId == cell.value:
+        if managerId.value == cell.value:
             return workbook["Managers"][f"B{cell.row}"]
     
 
