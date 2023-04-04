@@ -89,6 +89,7 @@ while choice != "q":
             break
 email = sendEmail(workbook ,date + " " + "c343")
 print(f"{email} has been notified about c343 session dated {date}")
+
 print("Joining Trainees with CourseDetails")
 print("Select Trainees columns to display")
 A = selectColumns(workbook["Trainees"])

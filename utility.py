@@ -61,7 +61,7 @@ def sendEmail(workbook: Workbook, title: str):
             managerId = workbook["Trainers"][f"B{cell.row}"]
     for cell in workbook["Managers"]["A"]:
         if managerId.value == cell.value:
-            return workbook["Managers"][f"B{cell.row}"]
+            return workbook["Managers"][f"B{cell.row}"].value
     
 
     
